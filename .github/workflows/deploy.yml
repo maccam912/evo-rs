@@ -43,7 +43,7 @@ jobs:
           ls -alh target/wasm32-unknown-unknown
           echo "=== release"
           ls -alh target/wasm32-unknown-unknown/release
-          wasm-bindgen --target web --no-typescript --out-dir web target/wasm32-unknown-unknown/release/evo_rs.wasm
+          wasm-bindgen --target web --no-typescript --out-dir web target/wasm32-unknown-unknown/release/evo-rs.wasm
           cat <<'HTML' > web/index.html
           <!DOCTYPE html>
           <html lang="en">
@@ -56,7 +56,7 @@ jobs:
                 canvas { width: 100vw; height: 100vh; display: block; }
               </style>
               <script type="module">
-                import init from "./evo_rs.js";
+                import init from "./evo-rs.js";
                 init();
               </script>
             </head>
