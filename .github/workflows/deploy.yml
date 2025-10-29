@@ -1,0 +1,75 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install wasm-bindgen-cli
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: wasm-bindgen-cli
+
+      - name: Build wasm release
+        run: |
+          set -euxo pipefail
+          cargo build --release --target wasm32-unknown-unknown
+          mkdir -p web
+          wasm-bindgen --target web --no-typescript --out-dir web target/wasm32-unknown-unknown/release/evo_rs.wasm
+          cat <<'HTML' > web/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+            <head>
+              <meta charset="utf-8" />
+              <title>evo-rs</title>
+              <meta name="viewport" content="width=device-width, initial-scale=1" />
+              <style>
+                html, body { margin: 0; padding: 0; background: black; }
+                canvas { width: 100vw; height: 100vh; display: block; }
+              </style>
+              <script type="module">
+                import init from "./evo_rs.js";
+                init();
+              </script>
+            </head>
+            <body></body>
+          </html>
+          HTML
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: web
+
+  deploy:
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
