@@ -37,6 +37,12 @@ jobs:
           set -euxo pipefail
           cargo build --release --target wasm32-unknown-unknown
           mkdir -p web
+          echo "=== target"
+          ls -alh target
+          echo "=== wasm32-u-u"
+          ls -alh target/wasm32-unknown-unknown
+          echo "=== release"
+          ls -alh target/wasm32-unknown-unknown/release
           wasm-bindgen --target web --no-typescript --out-dir web target/wasm32-unknown-unknown/release/evo_rs.wasm
           cat <<'HTML' > web/index.html
           <!DOCTYPE html>
