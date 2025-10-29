@@ -4,15 +4,16 @@ use crate::genome::{Genome, GenomeExecutor, Word, Sensors};
 use crate::plant::{Plant, PlantScent};
 use crate::config::*;
 
-/// Animal component with energy
+/// Animal component with energy and age
 #[derive(Component)]
 pub struct Animal {
     pub energy: u32,
+    pub age: f32,
 }
 
 impl Animal {
     pub fn new(energy: u32) -> Self {
-        Self { energy }
+        Self { energy, age: 0.0 }
     }
 
     pub fn consume_energy(&mut self, amount: u32) {
@@ -563,12 +564,19 @@ fn execute_word(
     }
 }
 
-/// System for animal metabolism - drains energy at configured rate
+/// System for animal metabolism - drains energy at configured rate and increments age
 pub fn animal_metabolism(
     time: Res<Time>,
     mut timer: ResMut<MetabolismTimer>,
     mut animals: Query<&mut Animal>,
 ) {
+    // Increment age continuously for all animals
+    let delta = time.delta_secs();
+    for mut animal in animals.iter_mut() {
+        animal.age += delta;
+    }
+
+    // Drain energy at regular intervals
     if timer.0.tick(time.delta()).just_finished() {
         for mut animal in animals.iter_mut() {
             animal.consume_energy(METABOLISM_COST);
@@ -576,13 +584,13 @@ pub fn animal_metabolism(
     }
 }
 
-/// System to remove dead animals (zero or negative energy)
+/// System to remove dead animals (zero energy or exceeded max lifespan)
 pub fn remove_dead_animals(
     mut commands: Commands,
     animals: Query<(Entity, &Animal)>,
 ) {
     for (entity, animal) in animals.iter() {
-        if animal.energy == 0 {
+        if animal.energy == 0 || animal.age >= MAX_LIFESPAN {
             commands.entity(entity).despawn();
         }
     }

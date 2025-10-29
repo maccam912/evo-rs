@@ -45,6 +45,9 @@ pub const METABOLISM_INTERVAL: f32 = 1.0;
 /// Energy drained from each animal per metabolism tick
 pub const METABOLISM_COST: u32 = 1;
 
+/// Maximum lifespan of an animal in seconds (animals die when age >= this value)
+pub const MAX_LIFESPAN: f32 = 60.0;
+
 /// Interval in seconds between plant spawns
 pub const PLANT_SPAWN_INTERVAL: f32 = 0.1;
 

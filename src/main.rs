@@ -196,6 +196,7 @@ fn ui_system(
                     ui.separator();
 
                     ui.label(format!("Energy: {}", animal.energy));
+                    ui.label(format!("Age: {:.1}s / {:.0}s", animal.age, config::MAX_LIFESPAN));
 
                     ui.separator();
                     ui.label(format!("Position: ({:.1}, {:.1})",
