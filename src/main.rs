@@ -8,7 +8,7 @@ mod config;
 
 use bevy::prelude::*;
 use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use camera::{CameraState, MainCamera, camera_pan, camera_zoom, setup_camera};
+use camera::{CameraState, MainCamera, camera_pan, camera_touch_controls, camera_zoom, setup_camera};
 use plant::{PlantConfig, PlantSpawnTimer, PlantGrowthTimer, spawn_plants, grow_plants, update_plant_visuals, Plant};
 use selection::{Selected, SelectedEntity, handle_selection, update_selection_visuals};
 use outline::{manage_selection_outlines, update_outline_positions};
@@ -52,6 +52,7 @@ fn main() {
             // Always run (even when paused)
             camera_zoom,
             camera_pan,
+            camera_touch_controls,
             handle_selection,
             update_selection_visuals,
             manage_selection_outlines,
@@ -141,6 +142,7 @@ fn ui_system(
             ui.label("Controls:");
             ui.label("• Mouse Wheel - Zoom in/out");
             ui.label("• Middle Mouse - Pan camera");
+            ui.label("• Touch - Pinch to zoom, drag to pan");
             ui.label("• Left Click - Select entity");
 
             ui.separator();
