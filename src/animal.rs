@@ -612,27 +612,28 @@ pub fn split_animals(
         let remaining_energy = animal.energy.saturating_sub(SPLIT_ENERGY_COST);
         let offspring_energy = remaining_energy / 2;
 
-        // Create two offspring with mutated genomes
-        for _ in 0..2 {
-            let mutated_genome = genome.mutate();
-            let position = transform.translation.truncate();
-            let rotation = transform.rotation;
+        // Create a single offspring with mutated genome
+        let mutated_genome = genome.mutate();
+        let position = transform.translation.truncate();
 
-            commands.spawn((
-                Animal::new(offspring_energy),
-                mutated_genome,
-                GenomeExecutor::new(offspring_energy),
-                Sensors::default(),
-                Mesh2d(meshes.add(Circle::new(10.0))),
-                MeshMaterial2d(
-                    materials.add(ColorMaterial::from_color(Color::srgb(0.9, 0.3, 0.2))),
-                ),
-                Transform::from_xyz(position.x, position.y, 0.0).with_rotation(rotation),
-            ));
-        }
+        // Child faces 180 degrees from parent rotation
+        let parent_rotation = transform.rotation;
+        let child_rotation = parent_rotation * Quat::from_rotation_z(std::f32::consts::PI);
 
-        // Despawn the parent
-        commands.entity(entity).despawn();
+        commands.spawn((
+            Animal::new(offspring_energy),
+            mutated_genome,
+            GenomeExecutor::new(offspring_energy),
+            Sensors::default(),
+            Mesh2d(meshes.add(Circle::new(10.0))),
+            MeshMaterial2d(
+                materials.add(ColorMaterial::from_color(Color::srgb(0.9, 0.3, 0.2))),
+            ),
+            Transform::from_xyz(position.x, position.y, 0.0).with_rotation(child_rotation),
+        ));
+
+        // Parent keeps living but loses the PendingSplit component
+        commands.entity(entity).remove::<PendingSplit>();
     }
 }
 
