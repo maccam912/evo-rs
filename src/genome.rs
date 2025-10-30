@@ -1,6 +1,6 @@
+use crate::config::*;
 use bevy::prelude::*;
 use rand::Rng;
-use crate::config::*;
 use std::fmt;
 
 /// Stack value types for the stack machine
@@ -39,55 +39,55 @@ impl fmt::Display for StackValue {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Word {
     // Stack Manipulation
-    Dup,          // ( a -- a a )
-    Drop,         // ( a -- )
-    Swap,         // ( a b -- b a )
-    Over,         // ( a b -- a b a )
-    Rot,          // ( a b c -- b c a )
+    Dup,  // ( a -- a a )
+    Drop, // ( a -- )
+    Swap, // ( a b -- b a )
+    Over, // ( a b -- a b a )
+    Rot,  // ( a b c -- b c a )
 
     // Literals
-    PushFloat(f32),  // ( -- f32 )
-    PushBool(bool),  // ( -- bool )
+    PushFloat(f32), // ( -- f32 )
+    PushBool(bool), // ( -- bool )
 
     // Sensor Operations (push sensor values)
-    SmellFront,   // ( -- f32 ) - Push front smell sensor distance
-    SmellBack,    // ( -- f32 ) - Push back smell sensor distance
-    SmellLeft,    // ( -- f32 ) - Push left smell sensor distance
-    SmellRight,   // ( -- f32 ) - Push right smell sensor distance
-    Energy,       // ( -- f32 ) - Push current energy
+    SmellFront, // ( -- f32 ) - Push front smell sensor distance
+    SmellBack,  // ( -- f32 ) - Push back smell sensor distance
+    SmellLeft,  // ( -- f32 ) - Push left smell sensor distance
+    SmellRight, // ( -- f32 ) - Push right smell sensor distance
+    Energy,     // ( -- f32 ) - Push current energy
 
     // Arithmetic Operations
-    Add,          // ( a b -- a+b )
-    Sub,          // ( a b -- a-b )
-    Mul,          // ( a b -- a*b )
-    Div,          // ( a b -- a/b )
+    Add, // ( a b -- a+b )
+    Sub, // ( a b -- a-b )
+    Mul, // ( a b -- a*b )
+    Div, // ( a b -- a/b )
 
     // Comparison Operations
-    Lt,           // ( a b -- bool ) - a < b
-    Gt,           // ( a b -- bool ) - a > b
-    Eq,           // ( a b -- bool ) - a == b
+    Lt, // ( a b -- bool ) - a < b
+    Gt, // ( a b -- bool ) - a > b
+    Eq, // ( a b -- bool ) - a == b
 
     // Logic Operations
-    And,          // ( bool bool -- bool )
-    Or,           // ( bool bool -- bool )
-    Not,          // ( bool -- bool )
+    And, // ( bool bool -- bool )
+    Or,  // ( bool bool -- bool )
+    Not, // ( bool -- bool )
 
     // Control Flow
-    If,           // ( bool -- ) - Begin conditional
-    Then,         // ( -- ) - End conditional / else branch
-    Else,         // ( -- ) - Start else branch
+    If,   // ( bool -- ) - Begin conditional
+    Then, // ( -- ) - End conditional / else branch
+    Else, // ( -- ) - Start else branch
 
     // Labels (markers for jumps)
-    Label0,       // ( -- ) - Label marker 0
-    Label1,       // ( -- ) - Label marker 1
-    Label2,       // ( -- ) - Label marker 2
-    Label3,       // ( -- ) - Label marker 3
+    Label0, // ( -- ) - Label marker 0
+    Label1, // ( -- ) - Label marker 1
+    Label2, // ( -- ) - Label marker 2
+    Label3, // ( -- ) - Label marker 3
 
     // Jumps (jump to label position)
-    Jump0,        // ( -- ) - Jump to Label0
-    Jump1,        // ( -- ) - Jump to Label1
-    Jump2,        // ( -- ) - Jump to Label2
-    Jump3,        // ( -- ) - Jump to Label3
+    Jump0, // ( -- ) - Jump to Label0
+    Jump1, // ( -- ) - Jump to Label1
+    Jump2, // ( -- ) - Jump to Label2
+    Jump3, // ( -- ) - Jump to Label3
 
     // Movement Actions (consume stack values)
     MoveForward,  // ( f32 -- ) - Move forward by distance
@@ -96,11 +96,11 @@ pub enum Word {
     TurnRight,    // ( f32 -- ) - Turn right by degrees
 
     // Resource Actions
-    Eat,          // ( -- ) - Try to eat nearby plant
-    Split,        // ( -- ) - Reproduce
+    Eat,   // ( -- ) - Try to eat nearby plant
+    Split, // ( -- ) - Reproduce
 
     // Special
-    Nop,          // ( -- ) - No operation
+    Nop, // ( -- ) - No operation
 }
 
 impl Word {
@@ -118,7 +118,7 @@ impl Word {
 
             // Literals (20%)
             20..=24 => Word::PushFloat(rng.gen_range(0.01..0.2)),
-            25..=29 => Word::PushFloat(rng.gen_range(0.05..0.9)),  // For turns
+            25..=29 => Word::PushFloat(rng.gen_range(0.05..0.9)), // For turns
             30..=34 => Word::PushFloat(rng.gen_range(50.0..500.0)), // For comparisons
             35..=39 => Word::PushBool(rng.gen_bool(0.5)),
 
@@ -154,7 +154,16 @@ impl Word {
             98 => [Word::Label0, Word::Label1, Word::Label2, Word::Label3][rng.gen_range(0..4)],
 
             // Jumps (3%)
-            _ => [Word::Jump0, Word::Jump1, Word::Jump2, Word::Jump3, Word::Dup, Word::Swap, Word::Energy, Word::Nop][rng.gen_range(0..8)],
+            _ => [
+                Word::Jump0,
+                Word::Jump1,
+                Word::Jump2,
+                Word::Jump3,
+                Word::Dup,
+                Word::Swap,
+                Word::Energy,
+                Word::Nop,
+            ][rng.gen_range(0..8)],
         }
     }
 
@@ -162,15 +171,40 @@ impl Word {
     pub fn category(&self) -> WordCategory {
         match self {
             Word::Dup | Word::Drop | Word::Swap | Word::Over | Word::Rot => WordCategory::Stack,
-            Word::PushFloat(_) | Word::PushBool(_) | Word::SmellFront | Word::SmellBack
-            | Word::SmellLeft | Word::SmellRight | Word::Energy => WordCategory::Sensor,
-            Word::Add | Word::Sub | Word::Mul | Word::Div
-            | Word::Lt | Word::Gt | Word::Eq | Word::And | Word::Or | Word::Not => WordCategory::Arithmetic,
-            Word::If | Word::Then | Word::Else
-            | Word::Label0 | Word::Label1 | Word::Label2 | Word::Label3
-            | Word::Jump0 | Word::Jump1 | Word::Jump2 | Word::Jump3 => WordCategory::Control,
-            Word::MoveForward | Word::MoveBackward | Word::TurnLeft | Word::TurnRight
-            | Word::Eat | Word::Split => WordCategory::Action,
+            Word::PushFloat(_)
+            | Word::PushBool(_)
+            | Word::SmellFront
+            | Word::SmellBack
+            | Word::SmellLeft
+            | Word::SmellRight
+            | Word::Energy => WordCategory::Sensor,
+            Word::Add
+            | Word::Sub
+            | Word::Mul
+            | Word::Div
+            | Word::Lt
+            | Word::Gt
+            | Word::Eq
+            | Word::And
+            | Word::Or
+            | Word::Not => WordCategory::Arithmetic,
+            Word::If
+            | Word::Then
+            | Word::Else
+            | Word::Label0
+            | Word::Label1
+            | Word::Label2
+            | Word::Label3
+            | Word::Jump0
+            | Word::Jump1
+            | Word::Jump2
+            | Word::Jump3 => WordCategory::Control,
+            Word::MoveForward
+            | Word::MoveBackward
+            | Word::TurnLeft
+            | Word::TurnRight
+            | Word::Eat
+            | Word::Split => WordCategory::Action,
             Word::Nop => WordCategory::Special,
         }
     }
@@ -185,7 +219,11 @@ impl Word {
             Word::Rot => "( a b c -- b c a )",
             Word::PushFloat(_) => "( -- f32 )",
             Word::PushBool(_) => "( -- bool )",
-            Word::SmellFront | Word::SmellBack | Word::SmellLeft | Word::SmellRight | Word::Energy => "( -- f32 )",
+            Word::SmellFront
+            | Word::SmellBack
+            | Word::SmellLeft
+            | Word::SmellRight
+            | Word::Energy => "( -- f32 )",
             Word::Add | Word::Sub | Word::Mul | Word::Div => "( a b -- result )",
             Word::Lt | Word::Gt | Word::Eq => "( a b -- bool )",
             Word::And | Word::Or => "( bool bool -- bool )",
@@ -194,7 +232,9 @@ impl Word {
             Word::Then | Word::Else => "( -- )",
             Word::Label0 | Word::Label1 | Word::Label2 | Word::Label3 => "( -- )",
             Word::Jump0 | Word::Jump1 | Word::Jump2 | Word::Jump3 => "( -- )",
-            Word::MoveForward | Word::MoveBackward | Word::TurnLeft | Word::TurnRight => "( f32 -- )",
+            Word::MoveForward | Word::MoveBackward | Word::TurnLeft | Word::TurnRight => {
+                "( f32 -- )"
+            }
             Word::Eat | Word::Split => "( -- )",
             Word::Nop => "( -- )",
         }
@@ -251,12 +291,12 @@ impl fmt::Display for Word {
 /// Category for color-coding words
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WordCategory {
-    Stack,       // Blue - Stack manipulation
-    Sensor,      // Purple - Sensors and literals
-    Arithmetic,  // Yellow - Arithmetic and logic
-    Control,     // Orange - Control flow
-    Action,      // Green - Movement and resource actions
-    Special,     // Gray - Special operations
+    Stack,      // Blue - Stack manipulation
+    Sensor,     // Purple - Sensors and literals
+    Arithmetic, // Yellow - Arithmetic and logic
+    Control,    // Orange - Control flow
+    Action,     // Green - Movement and resource actions
+    Special,    // Gray - Special operations
 }
 
 /// A genome is a sequence of words (Forth-like program)
@@ -271,9 +311,7 @@ impl Genome {
         // Keep generating genomes until we get one with a Split instruction
         // This ensures all spawned animals can reproduce
         loop {
-            let words: Vec<Word> = (0..length)
-                .map(|_| Word::random())
-                .collect();
+            let words: Vec<Word> = (0..length).map(|_| Word::random()).collect();
 
             // Check if this genome contains at least one Split instruction
             if words.iter().any(|word| matches!(word, Word::Split)) {
@@ -281,6 +319,62 @@ impl Genome {
             }
             // Otherwise, try again
         }
+    }
+
+    /// Deterministic seed genome tuned for food-seeking and timely reproduction
+    pub fn seed() -> Self {
+        let mut words = vec![
+            Word::Label0,
+            // Determine which side has a closer scent and rotate toward it
+            Word::SmellLeft,
+            Word::SmellRight,
+            Word::Lt,
+            Word::If,
+            Word::SmellLeft,
+            Word::SmellFront,
+            Word::Lt,
+            Word::If,
+            Word::PushFloat(500.0), // Rotate left in small, controlled steps
+            Word::TurnLeft,
+            Word::Jump0,
+            Word::Then,
+            Word::Else,
+            Word::SmellRight,
+            Word::SmellFront,
+            Word::Lt,
+            Word::If,
+            Word::PushFloat(500.0), // Rotate right toward the stronger scent
+            Word::TurnRight,
+            Word::Jump0,
+            Word::Then,
+            Word::Then,
+            // Move faster when a plant is close, otherwise cruise slowly
+            Word::SmellFront,
+            Word::PushFloat(200.0),
+            Word::Lt,
+            Word::If,
+            Word::PushFloat(70.0),
+            Word::Else,
+            Word::PushFloat(20.0),
+            Word::Then,
+            Word::MoveForward,
+            Word::Eat,
+            // Reproduce when we have built up sufficient energy reserves
+            Word::Energy,
+            Word::PushFloat(30.0),
+            Word::Gt,
+            Word::If,
+            Word::Split,
+            Word::Then,
+            // Loop forever
+            Word::Jump0,
+        ];
+
+        while words.len() < BASE_GENOME_LENGTH {
+            words.push(Word::Nop);
+        }
+
+        Self { words }
     }
 
     /// Create a mutated copy of this genome
@@ -298,11 +392,7 @@ impl Genome {
             }
 
             let should_mutate = rng.gen_range(0..100) < MUTATION_RATE;
-            let word_to_add = if should_mutate {
-                Word::random()
-            } else {
-                word
-            };
+            let word_to_add = if should_mutate { Word::random() } else { word };
 
             new_words.push(word_to_add);
 
@@ -333,7 +423,7 @@ impl Genome {
             match word {
                 Word::If => if_count += 1,
                 Word::Then => then_count += 1,
-                Word::Else => {},
+                Word::Else => {}
                 _ => {}
             }
         }
@@ -392,7 +482,7 @@ impl GenomeExecutor {
     pub fn reset_for_frame(&mut self, energy: u32) {
         // DO NOT reset instruction_pointer (keep circular execution position)
         // DO NOT clear stack (persist values across frames)
-        self.if_stack.clear();  // Clear control flow only
+        self.if_stack.clear(); // Clear control flow only
         self.instructions_executed_this_frame = 0;
         self.max_instructions_per_frame = (energy * 1).min(MAX_INSTRUCTIONS_PER_FRAME);
     }
@@ -416,7 +506,8 @@ impl GenomeExecutor {
     pub fn build_jump_table(&mut self, genome: &Genome) {
         self.jump_table.clear();
         let mut if_stack: Vec<usize> = Vec::new();
-        let mut else_positions: std::collections::HashMap<usize, usize> = std::collections::HashMap::new();
+        let mut else_positions: std::collections::HashMap<usize, usize> =
+            std::collections::HashMap::new();
 
         for (i, word) in genome.words.iter().enumerate() {
             match word {

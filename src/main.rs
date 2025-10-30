@@ -1,20 +1,28 @@
+mod animal;
 mod camera;
+mod config;
+mod genome;
+mod outline;
 mod plant;
 mod selection;
-mod outline;
-mod genome;
-mod animal;
-mod config;
 
+use animal::{
+    Animal, MetabolismTimer, animal_metabolism, execute_genomes, population_failsafe,
+    remove_dead_animals, spawn_seed_animals, spawn_test_animals, split_animals, update_sensors,
+};
 use bevy::prelude::*;
-use bevy_egui::{egui, EguiContexts, EguiPlugin};
-use camera::{CameraState, MainCamera, camera_pan, camera_touch_controls, camera_zoom, setup_camera};
-use plant::{PlantConfig, PlantSpawnTimer, PlantGrowthTimer, spawn_plants, grow_plants, update_plant_visuals, Plant};
-use selection::{Selected, SelectedEntity, handle_selection, update_selection_visuals};
-use outline::{manage_selection_outlines, update_outline_positions};
-use animal::{Animal, MetabolismTimer, spawn_test_animals, spawn_random_animals, update_sensors, execute_genomes, animal_metabolism, remove_dead_animals, split_animals, population_failsafe};
-use genome::{Genome, GenomeExecutor, Sensors, WordCategory};
+use bevy_egui::{EguiContexts, EguiPlugin, egui};
+use camera::{
+    CameraState, MainCamera, camera_pan, camera_touch_controls, camera_zoom, setup_camera,
+};
 use config::*;
+use genome::{Genome, GenomeExecutor, Sensors, WordCategory};
+use outline::{manage_selection_outlines, update_outline_positions};
+use plant::{
+    Plant, PlantConfig, PlantGrowthTimer, PlantSpawnTimer, grow_plants, spawn_plants,
+    update_plant_visuals,
+};
+use selection::{Selected, SelectedEntity, handle_selection, update_selection_visuals};
 
 /// Resource to control simulation state
 #[derive(Resource, PartialEq, Eq, Clone, Copy)]
@@ -44,36 +52,51 @@ fn main() {
         .init_resource::<PlantConfig>()
         .init_resource::<SelectedEntity>()
         .init_resource::<SimulationState>()
-        .insert_resource(PlantSpawnTimer(Timer::from_seconds(PLANT_SPAWN_INTERVAL, TimerMode::Repeating)))
-        .insert_resource(PlantGrowthTimer(Timer::from_seconds(PLANT_GROWTH_INTERVAL, TimerMode::Repeating)))
-        .insert_resource(MetabolismTimer(Timer::from_seconds(METABOLISM_INTERVAL, TimerMode::Repeating)))
+        .insert_resource(PlantSpawnTimer(Timer::from_seconds(
+            PLANT_SPAWN_INTERVAL,
+            TimerMode::Repeating,
+        )))
+        .insert_resource(PlantGrowthTimer(Timer::from_seconds(
+            PLANT_GROWTH_INTERVAL,
+            TimerMode::Repeating,
+        )))
+        .insert_resource(MetabolismTimer(Timer::from_seconds(
+            METABOLISM_INTERVAL,
+            TimerMode::Repeating,
+        )))
         .add_systems(Startup, (setup_camera, spawn_test_animals))
-        .add_systems(Update, (
-            // Always run (even when paused)
-            camera_zoom,
-            camera_pan,
-            camera_touch_controls,
-            handle_selection,
-            update_selection_visuals,
-            manage_selection_outlines,
-            update_outline_positions,
-            ui_system,
-        ))
-        .add_systems(Update, (
-            // Only run when simulation is running
-            spawn_plants,
-            grow_plants,
-            update_plant_visuals,
-            update_sensors,
-            execute_genomes,
-            split_animals,
-            animal_metabolism,
-            remove_dead_animals,
-            population_failsafe,
-        ).run_if(|state: Res<SimulationState>| *state == SimulationState::Running))
+        .add_systems(
+            Update,
+            (
+                // Always run (even when paused)
+                camera_zoom,
+                camera_pan,
+                camera_touch_controls,
+                handle_selection,
+                update_selection_visuals,
+                manage_selection_outlines,
+                update_outline_positions,
+                ui_system,
+            ),
+        )
+        .add_systems(
+            Update,
+            (
+                // Only run when simulation is running
+                spawn_plants,
+                grow_plants,
+                update_plant_visuals,
+                update_sensors,
+                execute_genomes,
+                split_animals,
+                animal_metabolism,
+                remove_dead_animals,
+                population_failsafe,
+            )
+                .run_if(|state: Res<SimulationState>| *state == SimulationState::Running),
+        )
         .run();
 }
-
 
 fn ui_system(
     mut commands: Commands,
@@ -85,7 +108,10 @@ fn ui_system(
     plants: Query<&Plant>,
     animals: Query<&Animal>,
     selected_plants: Query<(&Plant, &Transform), With<Selected>>,
-    selected_animals: Query<(&Animal, &Genome, &GenomeExecutor, &Sensors, &Transform), With<Selected>>,
+    selected_animals: Query<
+        (&Animal, &Genome, &GenomeExecutor, &Sensors, &Transform),
+        With<Selected>,
+    >,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
@@ -117,8 +143,11 @@ fn ui_system(
             });
 
             ui.horizontal(|ui| {
-                if ui.button(format!("➕ Spawn {} Animals", MANUAL_SPAWN_COUNT)).clicked() {
-                    spawn_random_animals(
+                if ui
+                    .button(format!("➕ Spawn {} Animals", MANUAL_SPAWN_COUNT))
+                    .clicked()
+                {
+                    spawn_seed_animals(
                         &mut commands,
                         &mut meshes,
                         &mut materials,
@@ -133,9 +162,9 @@ fn ui_system(
             ui.separator();
 
             ui.label(format!("Zoom: {:.2}x", camera_state.zoom));
-            ui.label(format!("Position: ({:.1}, {:.1})",
-                camera_state.position.x,
-                camera_state.position.y
+            ui.label(format!(
+                "Position: ({:.1}, {:.1})",
+                camera_state.position.x, camera_state.position.y
             ));
 
             ui.separator();
@@ -189,24 +218,31 @@ fn ui_system(
                     ui.add(progress_bar);
 
                     ui.separator();
-                    ui.label(format!("Position: ({:.1}, {:.1})",
-                        transform.translation.x,
-                        transform.translation.y
+                    ui.label(format!(
+                        "Position: ({:.1}, {:.1})",
+                        transform.translation.x, transform.translation.y
                     ));
-                } else if let Ok((animal, genome, executor, sensors, transform)) = selected_animals.get_single() {
+                } else if let Ok((animal, genome, executor, sensors, transform)) =
+                    selected_animals.get_single()
+                {
                     ui.heading("Animal");
                     ui.separator();
 
                     ui.label(format!("Energy: {}", animal.energy));
-                    ui.label(format!("Age: {:.1}s / {:.0}s", animal.age, config::MAX_LIFESPAN));
-
-                    ui.separator();
-                    ui.label(format!("Position: ({:.1}, {:.1})",
-                        transform.translation.x,
-                        transform.translation.y
+                    ui.label(format!(
+                        "Age: {:.1}s / {:.0}s",
+                        animal.age,
+                        config::MAX_LIFESPAN
                     ));
 
-                    let rotation_degrees = transform.rotation.to_euler(EulerRot::ZXY).0.to_degrees();
+                    ui.separator();
+                    ui.label(format!(
+                        "Position: ({:.1}, {:.1})",
+                        transform.translation.x, transform.translation.y
+                    ));
+
+                    let rotation_degrees =
+                        transform.rotation.to_euler(EulerRot::ZXY).0.to_degrees();
                     ui.label(format!("Facing: {:.1}°", rotation_degrees));
 
                     ui.separator();
@@ -237,7 +273,8 @@ fn ui_system(
                     ui.label(format!("  Words: {}", genome.words.len()));
                     ui.label(format!("  Current IP: {}", executor.instruction_pointer));
                     ui.label(format!("  Stack Size: {}", executor.stack.len()));
-                    ui.label(format!("  Executed: {} / {}",
+                    ui.label(format!(
+                        "  Executed: {} / {}",
                         executor.instructions_executed_this_frame,
                         executor.max_instructions_per_frame
                     ));
@@ -249,15 +286,20 @@ fn ui_system(
 
     // Show genome viewer for selected animals
     if selected_entity.entity.is_some() {
-        if let Ok((animal, genome, executor, _sensors, _transform)) = selected_animals.get_single() {
+        if let Ok((animal, genome, executor, _sensors, _transform)) = selected_animals.get_single()
+        {
             egui::Window::new("Genome Viewer")
                 .default_pos(egui::pos2(300.0, 10.0))
                 .default_size(egui::vec2(500.0, 600.0))
                 .show(contexts.ctx_mut(), |ui| {
-                    ui.heading(format!("Stack Machine Genome ({} words)", genome.words.len()));
+                    ui.heading(format!(
+                        "Stack Machine Genome ({} words)",
+                        genome.words.len()
+                    ));
                     ui.separator();
 
-                    ui.label(format!("Energy: {} | IP: {} | Executed: {}/{}",
+                    ui.label(format!(
+                        "Energy: {} | IP: {} | Executed: {}/{}",
                         animal.energy,
                         executor.instruction_pointer,
                         executor.instructions_executed_this_frame,
@@ -293,29 +335,32 @@ fn ui_system(
                                 // Get word category for color
                                 let category = word.category();
                                 let text_color = match category {
-                                    WordCategory::Stack => egui::Color32::from_rgb(100, 150, 255),    // Blue
-                                    WordCategory::Sensor => egui::Color32::from_rgb(200, 100, 255),   // Purple
-                                    WordCategory::Arithmetic => egui::Color32::from_rgb(255, 220, 100), // Yellow
-                                    WordCategory::Control => egui::Color32::from_rgb(255, 150, 50),   // Orange
-                                    WordCategory::Action => egui::Color32::from_rgb(100, 255, 100),   // Green
-                                    WordCategory::Special => egui::Color32::from_rgb(150, 150, 150),  // Gray
+                                    WordCategory::Stack => egui::Color32::from_rgb(100, 150, 255), // Blue
+                                    WordCategory::Sensor => egui::Color32::from_rgb(200, 100, 255), // Purple
+                                    WordCategory::Arithmetic => {
+                                        egui::Color32::from_rgb(255, 220, 100)
+                                    } // Yellow
+                                    WordCategory::Control => egui::Color32::from_rgb(255, 150, 50), // Orange
+                                    WordCategory::Action => egui::Color32::from_rgb(100, 255, 100), // Green
+                                    WordCategory::Special => egui::Color32::from_rgb(150, 150, 150), // Gray
                                 };
 
                                 // Create the word text with stack effect
-                                let text = format!("{:3}: {}  {}", index, word, word.stack_effect());
+                                let text =
+                                    format!("{:3}: {}  {}", index, word, word.stack_effect());
 
                                 // Draw with background highlight if current word
                                 if is_current {
                                     let (rect, response) = ui.allocate_exact_size(
                                         egui::vec2(ui.available_width(), 18.0),
-                                        egui::Sense::hover()
+                                        egui::Sense::hover(),
                                     );
 
                                     // Draw highlight background
                                     ui.painter().rect_filled(
                                         rect,
                                         egui::Rounding::same(2.0),
-                                        egui::Color32::from_rgba_unmultiplied(255, 255, 0, 80) // Yellow highlight
+                                        egui::Color32::from_rgba_unmultiplied(255, 255, 0, 80), // Yellow highlight
                                     );
 
                                     // Draw text on top
@@ -324,7 +369,7 @@ fn ui_system(
                                         egui::Align2::LEFT_CENTER,
                                         &text,
                                         egui::FontId::monospace(11.0),
-                                        text_color
+                                        text_color,
                                     );
 
                                     response
@@ -332,7 +377,7 @@ fn ui_system(
                                     ui.add(egui::Label::new(
                                         egui::RichText::new(text)
                                             .color(text_color)
-                                            .font(egui::FontId::monospace(11.0))
+                                            .font(egui::FontId::monospace(11.0)),
                                     ))
                                 };
                             }
