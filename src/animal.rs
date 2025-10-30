@@ -605,12 +605,15 @@ pub fn split_animals(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    splitting_animals: Query<(Entity, &Animal, &Genome, &Transform), With<PendingSplit>>,
+    mut splitting_animals: Query<(Entity, &mut Animal, &Genome, &Transform), With<PendingSplit>>,
 ) {
-    for (entity, animal, genome, transform) in splitting_animals.iter() {
+    for (entity, mut animal, genome, transform) in splitting_animals.iter_mut() {
         // Consume energy for split
         let remaining_energy = animal.energy.saturating_sub(SPLIT_ENERGY_COST);
         let offspring_energy = remaining_energy / 2;
+
+        // Parent keeps half the remaining energy
+        animal.energy = offspring_energy;
 
         // Create a single offspring with mutated genome
         let mutated_genome = genome.mutate();

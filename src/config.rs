@@ -49,10 +49,10 @@ pub const METABOLISM_COST: u32 = 1;
 pub const MAX_LIFESPAN: f32 = 60.0;
 
 /// Interval in seconds between plant spawns
-pub const PLANT_SPAWN_INTERVAL: f32 = 0.1;
+pub const PLANT_SPAWN_INTERVAL: f32 = 1.0;
 
 /// Interval in seconds between plant growth ticks
-pub const PLANT_GROWTH_INTERVAL: f32 = 0.1;
+pub const PLANT_GROWTH_INTERVAL: f32 = 1.0;
 
 /// Energy added to each plant per growth tick
 pub const PLANT_GROWTH_AMOUNT: u32 = 1;
