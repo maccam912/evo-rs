@@ -2,6 +2,7 @@ use bevy::input::mouse::{MouseMotion, MouseWheel};
 use bevy::input::touch::Touches;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use bevy_egui::EguiContexts;
 
 #[derive(Component)]
 pub struct MainCamera;
@@ -45,7 +46,12 @@ pub fn camera_zoom(
     mut scroll_events: EventReader<MouseWheel>,
     mut camera_state: ResMut<CameraState>,
     mut query: Query<&mut OrthographicProjection, With<MainCamera>>,
+    mut contexts: EguiContexts,
 ) {
+    if contexts.ctx_mut().wants_pointer_input() {
+        return;
+    }
+
     for event in scroll_events.read() {
         // Zoom in/out with mouse wheel
         let zoom_delta = -event.y * 0.1;
@@ -63,7 +69,12 @@ pub fn camera_pan(
     mut camera_state: ResMut<CameraState>,
     mut query: Query<&mut Transform, With<MainCamera>>,
     _window_query: Query<&Window, With<PrimaryWindow>>,
+    mut contexts: EguiContexts,
 ) {
+    if contexts.ctx_mut().wants_pointer_input() {
+        return;
+    }
+
     // Check if middle mouse button is pressed
     if mouse_button.just_pressed(MouseButton::Middle) {
         camera_state.is_panning = true;
@@ -89,7 +100,12 @@ pub fn camera_touch_controls(
     touches: Res<Touches>,
     mut camera_state: ResMut<CameraState>,
     mut camera_query: Query<(&mut Transform, &mut OrthographicProjection), With<MainCamera>>,
+    mut contexts: EguiContexts,
 ) {
+    if contexts.ctx_mut().wants_pointer_input() {
+        return;
+    }
+
     // Track the active touches so that the same finger continues to control the camera.
     for touch in touches.iter_just_pressed() {
         let id = touch.id();
