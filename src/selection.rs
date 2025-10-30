@@ -1,7 +1,7 @@
+use crate::config::*;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
-use crate::config::*;
 
 /// Marker component for the currently selected entity
 #[derive(Component)]
@@ -22,7 +22,10 @@ pub fn handle_selection(
     mut commands: Commands,
     mut contexts: EguiContexts,
     // Query all entities that can be selected (have Transform and any selectable component)
-    selectable_query: Query<(Entity, &Transform), Or<(With<crate::plant::Plant>, With<crate::animal::Animal>)>>,
+    selectable_query: Query<
+        (Entity, &Transform),
+        Or<(With<crate::plant::Plant>, With<crate::animal::Animal>)>,
+    >,
     // Query entities that are currently selected
     currently_selected: Query<Entity, With<Selected>>,
 ) {

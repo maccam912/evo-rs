@@ -1,8 +1,8 @@
+use crate::config::*;
+use crate::genome::{Genome, GenomeExecutor, Sensors, Word};
+use crate::plant::{Plant, PlantScent};
 use bevy::prelude::*;
 use rand::Rng;
-use crate::genome::{Genome, GenomeExecutor, Word, Sensors};
-use crate::plant::{Plant, PlantScent};
-use crate::config::*;
 
 /// Animal component with energy and age
 #[derive(Component)]
@@ -35,7 +35,7 @@ pub fn spawn_test_animals(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    spawn_random_animals(
+    spawn_seed_animals(
         &mut commands,
         &mut meshes,
         &mut materials,
@@ -44,8 +44,8 @@ pub fn spawn_test_animals(
     );
 }
 
-/// Helper function to spawn random animals
-pub fn spawn_random_animals(
+/// Helper function to spawn animals with the deterministic seed genome
+pub fn spawn_seed_animals(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<ColorMaterial>>,
@@ -61,7 +61,7 @@ pub fn spawn_random_animals(
 
         commands.spawn((
             Animal::new(energy),
-            Genome::random(BASE_GENOME_LENGTH),
+            Genome::seed(),
             GenomeExecutor::new(energy),
             Sensors::default(),
             Mesh2d(meshes.add(Circle::new(10.0))),
@@ -142,20 +142,23 @@ pub struct PendingSplit;
 /// System to execute genome words (stack-based)
 pub fn execute_genomes(
     mut commands: Commands,
-    mut animals: Query<(
-        Entity,
-        &mut Animal,
-        &Genome,
-        &mut GenomeExecutor,
-        &Sensors,
-        &mut Transform,
-    ), Without<PendingSplit>>,
+    mut animals: Query<
+        (
+            Entity,
+            &mut Animal,
+            &Genome,
+            &mut GenomeExecutor,
+            &Sensors,
+            &mut Transform,
+        ),
+        Without<PendingSplit>,
+    >,
     mut plants: Query<(Entity, &mut Plant, &Transform), Without<Animal>>,
 ) {
     for (entity, mut animal, genome, mut executor, sensors, mut transform) in animals.iter_mut() {
         executor.reset_for_frame(animal.energy);
         executor.build_jump_table(genome);
-        executor.build_label_table(genome);  // Build label table for jumps
+        executor.build_label_table(genome); // Build label table for jumps
 
         let mut should_despawn = false;
         let mut should_split = false;
@@ -224,9 +227,9 @@ pub fn execute_genomes(
 
 /// Execution result for word execution
 enum ExecutionResult {
-    Continue,      // Continue to next word
-    Jump(usize),   // Jump to specific position (for control flow)
-    Skip,          // Skip this word (stack error)
+    Continue,    // Continue to next word
+    Jump(usize), // Jump to specific position (for control flow)
+    Skip,        // Skip this word (stack error)
 }
 
 /// Execute a single word
@@ -417,7 +420,9 @@ fn execute_word(
             let current_pos = executor.instruction_pointer;
 
             // Find matching Then/Else in jump table
-            if let Some((_, else_pos, then_pos)) = executor.jump_table.iter()
+            if let Some((_, else_pos, then_pos)) = executor
+                .jump_table
+                .iter()
                 .find(|(if_pos, _, _)| *if_pos == current_pos)
             {
                 if !condition {
@@ -457,7 +462,8 @@ fn execute_word(
         // Movement Actions
         Word::MoveForward => {
             if let Some(distance) = executor.pop_float() {
-                let clamped_distance = (distance * 0.01).clamp(-MAX_MOVEMENT_SPEED, MAX_MOVEMENT_SPEED);
+                let clamped_distance =
+                    (distance * 0.01).clamp(-MAX_MOVEMENT_SPEED, MAX_MOVEMENT_SPEED);
                 let forward = transform.rotation * Vec3::Y;
                 transform.translation += forward * clamped_distance;
                 Ok(ExecutionResult::Continue)
@@ -467,7 +473,8 @@ fn execute_word(
         }
         Word::MoveBackward => {
             if let Some(distance) = executor.pop_float() {
-                let clamped_distance = (distance * 0.01).clamp(-MAX_MOVEMENT_SPEED, MAX_MOVEMENT_SPEED);
+                let clamped_distance =
+                    (distance * 0.01).clamp(-MAX_MOVEMENT_SPEED, MAX_MOVEMENT_SPEED);
                 let backward = transform.rotation * Vec3::NEG_Y;
                 transform.translation += backward * clamped_distance;
                 Ok(ExecutionResult::Continue)
@@ -477,7 +484,8 @@ fn execute_word(
         }
         Word::TurnLeft => {
             if let Some(degrees) = executor.pop_float() {
-                let clamped_degrees = (degrees * 0.01).clamp(-MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
+                let clamped_degrees =
+                    (degrees * 0.01).clamp(-MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
                 let rotation = Quat::from_rotation_z(clamped_degrees.to_radians());
                 transform.rotation = rotation * transform.rotation;
                 Ok(ExecutionResult::Continue)
@@ -487,7 +495,8 @@ fn execute_word(
         }
         Word::TurnRight => {
             if let Some(degrees) = executor.pop_float() {
-                let clamped_degrees = (degrees * 0.01).clamp(-MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
+                let clamped_degrees =
+                    (degrees * 0.01).clamp(-MAX_ANGULAR_VELOCITY, MAX_ANGULAR_VELOCITY);
                 let rotation = Quat::from_rotation_z(-clamped_degrees.to_radians());
                 transform.rotation = rotation * transform.rotation;
                 Ok(ExecutionResult::Continue)
@@ -524,9 +533,7 @@ fn execute_word(
         }
 
         // Labels (just markers, act like Nop)
-        Word::Label0 | Word::Label1 | Word::Label2 | Word::Label3 => {
-            Ok(ExecutionResult::Continue)
-        }
+        Word::Label0 | Word::Label1 | Word::Label2 | Word::Label3 => Ok(ExecutionResult::Continue),
 
         // Jumps (jump to label position)
         Word::Jump0 => {
@@ -585,10 +592,7 @@ pub fn animal_metabolism(
 }
 
 /// System to remove dead animals (zero energy or exceeded max lifespan)
-pub fn remove_dead_animals(
-    mut commands: Commands,
-    animals: Query<(Entity, &Animal)>,
-) {
+pub fn remove_dead_animals(mut commands: Commands, animals: Query<(Entity, &Animal)>) {
     for (entity, animal) in animals.iter() {
         if animal.energy == 0 || animal.age >= MAX_LIFESPAN {
             commands.entity(entity).despawn();
@@ -620,7 +624,9 @@ pub fn split_animals(
                 GenomeExecutor::new(offspring_energy),
                 Sensors::default(),
                 Mesh2d(meshes.add(Circle::new(10.0))),
-                MeshMaterial2d(materials.add(ColorMaterial::from_color(Color::srgb(0.9, 0.3, 0.2)))),
+                MeshMaterial2d(
+                    materials.add(ColorMaterial::from_color(Color::srgb(0.9, 0.3, 0.2))),
+                ),
                 Transform::from_xyz(position.x, position.y, 0.0).with_rotation(rotation),
             ));
         }
@@ -640,7 +646,7 @@ pub fn population_failsafe(
     let count = animals.iter().count();
 
     if count == 0 {
-        spawn_random_animals(
+        spawn_seed_animals(
             &mut commands,
             &mut meshes,
             &mut materials,

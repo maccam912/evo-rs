@@ -1,5 +1,5 @@
-use bevy::prelude::*;
 use crate::selection::Selected;
+use bevy::prelude::*;
 
 /// Component that marks an outline entity linked to a selected entity
 #[derive(Component)]
@@ -26,7 +26,7 @@ pub fn manage_selection_outlines(
             SelectionOutline { parent: entity },
             Mesh2d(meshes.add(Circle::new(12.0))), // Slightly larger than plant (8.0)
             MeshMaterial2d(materials.add(ColorMaterial::from_color(
-                Color::srgba(1.0, 1.0, 0.0, 0.6) // Yellow with transparency
+                Color::srgba(1.0, 1.0, 0.0, 0.6), // Yellow with transparency
             ))),
             Transform::from_xyz(transform.translation.x, transform.translation.y, -0.1),
         ));

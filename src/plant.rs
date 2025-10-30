@@ -1,6 +1,6 @@
+use crate::config::*;
 use bevy::prelude::*;
 use rand::Rng;
-use crate::config::*;
 
 /// Plant component that stores energy
 #[derive(Component)]
@@ -91,9 +91,7 @@ pub fn grow_plants(
 }
 
 /// System to update plant visual representation based on energy
-pub fn update_plant_visuals(
-    mut plants: Query<(&Plant, &mut Transform), Changed<Plant>>,
-) {
+pub fn update_plant_visuals(mut plants: Query<(&Plant, &mut Transform), Changed<Plant>>) {
     for (plant, mut transform) in plants.iter_mut() {
         // Scale plant based on energy (0-100 maps to 0.5-1.5 scale)
         let scale = 0.5 + (plant.energy as f32 / Plant::MAX_ENERGY as f32) * 1.0;
