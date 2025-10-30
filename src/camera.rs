@@ -145,7 +145,7 @@ pub fn camera_touch_controls(
                     let distance_delta = current_distance - previous_distance;
                     if distance_delta.abs() > f32::EPSILON {
                         camera_state.zoom =
-                            (camera_state.zoom + distance_delta * 0.003).clamp(0.1, 10.0);
+                            (camera_state.zoom - distance_delta * 0.003).clamp(0.1, 10.0);
                         projection.scale = camera_state.zoom;
                     }
                 }
