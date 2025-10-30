@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
+use bevy_egui::EguiContexts;
 use crate::config::*;
 
 /// Marker component for the currently selected entity
@@ -19,6 +20,7 @@ pub fn handle_selection(
     camera_query: Query<(&Camera, &GlobalTransform)>,
     mut selected_entity: ResMut<SelectedEntity>,
     mut commands: Commands,
+    mut contexts: EguiContexts,
     // Query all entities that can be selected (have Transform and any selectable component)
     selectable_query: Query<(Entity, &Transform), Or<(With<crate::plant::Plant>, With<crate::animal::Animal>)>>,
     // Query entities that are currently selected
@@ -26,6 +28,10 @@ pub fn handle_selection(
 ) {
     // Only process on left mouse button click
     if !mouse_button.just_pressed(MouseButton::Left) {
+        return;
+    }
+
+    if contexts.ctx_mut().wants_pointer_input() {
         return;
     }
 
