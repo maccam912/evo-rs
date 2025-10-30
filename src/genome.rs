@@ -268,10 +268,19 @@ pub struct Genome {
 impl Genome {
     /// Create a new random genome
     pub fn random(length: usize) -> Self {
-        let words = (0..length)
-            .map(|_| Word::random())
-            .collect();
-        Self { words }
+        // Keep generating genomes until we get one with a Split instruction
+        // This ensures all spawned animals can reproduce
+        loop {
+            let words: Vec<Word> = (0..length)
+                .map(|_| Word::random())
+                .collect();
+
+            // Check if this genome contains at least one Split instruction
+            if words.iter().any(|word| matches!(word, Word::Split)) {
+                return Self { words };
+            }
+            // Otherwise, try again
+        }
     }
 
     /// Create a mutated copy of this genome
